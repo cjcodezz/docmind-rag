@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DocMind — In-Browser RAG</title>
+<meta name="description" content="Hybrid-search RAG (BM25 + embeddings + RRF + MMR) over your PDFs, running fully in the browser.">
+<style>
+:root{--bg:#0b0d14;--card:#141826;--line:#252b40;--ink:#e8ebf5;--mut:#8f97b3;--acc:#7c8cff;--ok:#3ecf8e;--warn:#f5b84b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+h1{margin:8px 0 2px;font-size:28px}h1 span{color:var(--acc)}.sub{color:var(--mut);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:16px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--mut);cursor:pointer}
+.drop.hot{border-color:var(--acc);color:var(--ink)}
+button,input,select,textarea{font:inherit;color:var(--ink);background:#0f1220;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+button{background:var(--acc);border:none;color:#0b0d14;font-weight:600;cursor:pointer}button:disabled{opacity:.45;cursor:default}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>input{flex:1;min-width:0}
+label{font-size:13px;color:var(--mut);display:block;margin:10px 0 4px}
+.files{margin:10px 0 0;padding:0;list-style:none;font-size:13px}.files li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)}
+.stat{font-size:12px;color:var(--mut)}.bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.ans{white-space:pre-wrap;margin-top:14px;min-height:40px}.cite{color:var(--acc);font-weight:600;cursor:pointer}
+.src{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13.5px}
+.src b{color:var(--acc)}.src .meta{color:var(--mut);font-size:12px;margin-bottom:4px}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mut);margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left}
+footer{color:var(--mut);font-size:12.5px;margin-top:28px;text-align:center}a{color:var(--acc)}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Doc<span>Mind</span></h1>
+<p class="sub">Ask questions about your PDFs. Hybrid retrieval (BM25 + MiniLM embeddings → Reciprocal Rank Fusion → MMR) runs <b>entirely in your browser</b>. Every answer cites its sources.</p>
+<div class="grid">
+ <div>
+  <div class="card">
+   <h3>1 · Documents</h3>
+   <div class="drop" id="drop">Drop PDFs / .txt / .md here<br><small>or click to browse</small><input type="file" id="file" multiple accept=".pdf,.txt,.md" hidden></div>
+   <div class="row" style="margin-top:10px"><button class="ghost" id="sample">Load sample (Attention paper abstract set)</button></div>
+   <ul class="files" id="files"></ul>
+   <div class="stat" id="istat">Embedding model not loaded yet.</div><div class="bar"><i id="ibar"></i></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+   <h3>2 · Settings</h3>
+   <label>Top-k context chunks</label><input id="k" type="number" value="4" min="1" max="10">
+   <label>Generator</label>
+   <select id="gen"><option value="extract">Extractive (no key, offline)</option><option value="gemini">Gemini (your own API key)</option></select>
+   <div id="keybox" hidden><label>Gemini API key (stays in this browser)</label><input id="key" type="password" placeholder="AIza…"></div>
+  </div>
+ </div>
+ <div>
+  <div class="card">
+   <h3>3 · Ask</h3>
+   <div class="row"><input id="q" placeholder="e.g. Why does the Transformer drop recurrence?"><button id="ask" disabled>Ask</button></div>
+   <div class="ans" id="ans"></div>
+   <div id="srcs"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+   <h3>Retrieval eval</h3>
+   <p class="stat">Compare BM25-only, dense-only and hybrid on your own questions. One per line: <code>question | keyword that must appear in the relevant chunk</code></p>
+   <textarea id="evalq" rows="4" style="width:100%"></textarea>
+   <div class="row" style="margin-top:8px"><button class="ghost" id="runEval" disabled>Run eval</button></div>
+   <div id="evalOut"></div>
+  </div>
+ </div>
+</div>
+<footer>DocMind · built by <a href="https://github.com/cjcodezz">Chirag Jain</a> · <a href="https://github.com/cjcodezz/docmind-rag">source</a></footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script type="module" src="app.js"></script>
+</body></html>

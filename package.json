@@ -1,0 +1,1 @@
+{"name":"docmind-rag","type":"module","private":true,"scripts":{"test":"node --test test/*.test.mjs"}}
