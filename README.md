@@ -1,7 +1,7 @@
 # DocMind — hybrid-search RAG that runs in your browser
 
 
-**Live demo → https://docmind-rag.vercel.app**
+**Live demo → https://cj-docmind.vercel.app**
 
 Drop in PDFs, ask questions, and get answers with clickable citations. Parsing, chunking, embedding and retrieval all happen client-side, so your documents never leave the device. Generation is either **extractive** (offline, no key) or **Gemini** (bring your own key, grounded prompt with inline citations).
 
